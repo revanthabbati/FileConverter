@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced JSON/XML Converter</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Premium CSS Variables for Theming --- */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            --surface-color: #ffffff;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --btn-text: #ffffff;
+            --header-bg: rgba(255, 255, 255, 0.85);
+            --cm-bg: #f8fafc;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --glow: 0 0 15px rgba(79, 70, 229, 0.3);
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+            --surface-color: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --primary-color: #6366f1;
+            --primary-hover: #818cf8;
+            --btn-text: #ffffff;
+            --header-bg: rgba(30, 41, 59, 0.85);
+            --cm-bg: #0f172a;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+            --shadow-lg: 0 25px 30px -5px rgb(0 0 0 / 0.6);
+            --glow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        /* --- Global Styles & Layout Engine --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.4s ease, color 0.4s ease;
+            overflow: hidden; 
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Header --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 2.5rem;
+            background-color: var(--header-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            letter-spacing: -0.025em;
+            color: var(--primary-color);
+        }
+
+        .theme-switch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-md);
+            font-size: 1.2rem;
+        }
+
+        .theme-switch:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* --- Toolbar --- */
+        .toolbar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            padding: 1.5rem 2.5rem 0.5rem 2.5rem;
+            background-color: transparent;
+            flex-wrap: wrap;
+            animation: fadeSlideUp 0.5s ease forwards;
+            flex-shrink: 0;
+        }
+
+        select {
+            padding: 0.7rem 1.2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            padding-right: 2.5rem;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+        
+        select:hover {
+            border-color: var(--primary-color);
+        }
+
+        option {
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        button, .file-upload-label {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            font-size: 0.95rem;
+            cursor: pointer;
+            outline: none;
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        button:hover, .file-upload-label:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        button:active, .file-upload-label:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--btn-text);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-sm), var(--glow);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+            color: var(--btn-text);
+            box-shadow: var(--shadow-md), var(--glow);
+        }
+
+        /* --- Workspace & Editors --- */
+        .workspace-wrapper {
+            flex-grow: 1;
+            padding: 1.5rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; 
+            animation: fadeSlideUp 0.6s ease forwards;
+            opacity: 0; 
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            flex-grow: 1;
+            gap: 1.5rem;
+            min-height: 0; 
+        }
+
+        .panel {
+            background-color: var(--surface-color);
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            transition: all 0.4s ease;
+            min-height: 0; 
+        }
+
+        .panel-header {
+            padding: 1rem 1.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        .panel-badge {
+            background-color: var(--bg-gradient);
+            color: var(--primary-color);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+
+        .editor-container {
+            flex-grow: 1;
+            position: relative;
+            min-height: 0;
+            overflow: hidden;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        .CodeMirror {
+            position: absolute !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100% !important;
+            width: 100% !important;
+            font-family: 'Fira Code', monospace !important;
+            font-size: 14px;
+            background-color: var(--cm-bg) !important;
+            transition: background-color 0.4s ease;
+        }
+
+        .CodeMirror-gutters {
+            border-right: 1px solid var(--border-color) !important;
+            background-color: var(--cm-bg) !important;
+            transition: all 0.4s ease;
+        }
+
+        /* --- Footer --- */
+        footer {
+            text-align: center;
+            padding: 1.2rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background-color: transparent;
+            animation: fadeSlideUp 0.7s ease forwards;
+            opacity: 0;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        footer strong {
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            FormatShift
+        </div>
+        
+        <button class="theme-switch" onclick="toggleTheme()" aria-label="Toggle Theme" title="Toggle Dark/Light Mode">
+            <span id="theme-icon" style="font-size: 1.2rem; line-height: 1;">🌙</span>
+        </button>
+    </header>
+
+    <div class="toolbar">
+        <select id="conversionMode" onchange="updatePanelHeaders()">
+            <option value="json2xml">JSON to XML</option>
+            <option value="xml2json">XML to JSON</option>
+        </select>
+
+        <label class="file-upload-label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Upload File
+            <input type="file" id="fileInput" accept=".json,.xml" onchange="handleFileUpload(event)">
+        </label>
+
+        <button onclick="formatCode()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
+            Format
+        </button>
+
+        <button class="btn-primary" onclick="convertCode()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            Convert
+        </button>
+        
+        <button onclick="downloadCode()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Download
+        </button>
+        
+        <button onclick="clearEditors()" style="margin-left: auto; color: #ef4444; border-color: #fca5a5;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Clear
+        </button>
+    </div>
+
+    <div class="workspace-wrapper">
+        <div class="workspace">
+            <div class="panel">
+                <div class="panel-header">
+                    <span id="inputHeader">Editor</span>
+                    <span class="panel-badge" id="inputBadge">JSON</span>
+                </div>
+                <div class="editor-container">
+                    <textarea id="inputArea"></textarea>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <span id="outputHeader">Preview</span>
+                    <span class="panel-badge" id="outputBadge">XML</span>
+                </div>
+                <div class="editor-container">
+                    <textarea id="outputArea"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Designed by <strong>Revanth Reddy Abbati</strong>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/x2js/1.2.0/xml2json.min.js"></script>
+
+    <script>
+        // Set initial CodeMirror theme
+        const initialTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'material-darker' : 'default';
+
+        // Initialize CodeMirror
+        let inputEditor = CodeMirror.fromTextArea(document.getElementById("inputArea"), {
+            lineNumbers: true,
+            mode: "application/json",
+            theme: initialTheme
+        });
+
+        let outputEditor = CodeMirror.fromTextArea(document.getElementById("outputArea"), {
+            lineNumbers: true,
+            mode: "xml",
+            theme: initialTheme
+        });
+
+        const x2js = new X2JS();
+
+        // --- NATIVE XML FORMATTER ---
+        function formatXml(xml) {
+            let formatted = '';
+            let pad = 0;
+            // First, remove existing whitespace between tags so we start clean
+            xml = xml.replace(/>\s+</g, '><');
+            // Then, insert line breaks between adjacent tags
+            xml = xml.replace(/(>)(<)(\/*)/g, '$1\n$2$3');
+            
+            xml.split('\n').forEach(function(node) {
+                let indent = 0;
+                if (node.match( /.+<\/\w[^>]*>$/ )) {
+                    indent = 0; // Node containing text
+                } else if (node.match( /^<\/\w/ )) {
+                    if (pad !== 0) pad -= 1; // Closing tag, decrease indent
+                } else if (node.match( /^<\w[^>]*[^\/]>.*$/ )) {
+                    indent = 1; // Opening tag, increase indent for next line
+                } else {
+                    indent = 0; // Self closing tag or other
+                }
+                
+                formatted += '    '.repeat(Math.max(0, pad)) + node + '\n';
+                pad += indent;
+            });
+            return formatted.trim();
+        }
+
+        // Theme Toggling Logic
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            html.setAttribute('data-theme', newTheme);
+            document.getElementById('theme-icon').innerText = newTheme === 'dark' ? '☀️' : '🌙';
+
+            const cmTheme = newTheme === 'dark' ? 'material-darker' : 'default';
+            inputEditor.setOption("theme", cmTheme);
+            outputEditor.setOption("theme", cmTheme);
+        }
+
+        // Header and syntax logic
+        function updatePanelHeaders() {
+            const mode = document.getElementById('conversionMode').value;
+            if (mode === 'json2xml') {
+                document.getElementById('inputBadge').innerText = 'JSON';
+                document.getElementById('outputBadge').innerText = 'XML';
+                inputEditor.setOption("mode", "application/json");
+                outputEditor.setOption("mode", "xml");
+            } else {
+                document.getElementById('inputBadge').innerText = 'XML';
+                document.getElementById('outputBadge').innerText = 'JSON';
+                inputEditor.setOption("mode", "xml");
+                outputEditor.setOption("mode", "application/json");
+            }
+        }
+
+        // File Upload Logic
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                inputEditor.setValue(e.target.result);
+                if (file.name.endsWith('.xml')) {
+                    document.getElementById('conversionMode').value = 'xml2json';
+                } else if (file.name.endsWith('.json')) {
+                    document.getElementById('conversionMode').value = 'json2xml';
+                }
+                updatePanelHeaders();
+            };
+            reader.readAsText(file);
+            event.target.value = ''; 
+        }
+
+        // --- NEW FORMAT LOGIC ---
+        function formatCode() {
+            const input = inputEditor.getValue().trim();
+            const mode = document.getElementById('conversionMode').value;
+            
+            if (!input) {
+                alert("Please enter or upload code to format.");
+                return;
+            }
+
+            try {
+                if (mode === 'json2xml') {
+                    // Format Input as JSON
+                    const parsed = JSON.parse(input);
+                    inputEditor.setValue(JSON.stringify(parsed, null, 4));
+                } else {
+                    // Format Input as XML
+                    inputEditor.setValue(formatXml(input));
+                }
+            } catch (error) {
+                alert("Error formatting input: Check for syntax errors. " + error.message);
+            }
+        }
+
+        // --- CONVERSION LOGIC ---
+        function convertCode() {
+            const input = inputEditor.getValue().trim();
+            const mode = document.getElementById('conversionMode').value;
+            
+            if (!input) {
+                alert("Please enter or upload code to convert.");
+                return;
+            }
+
+            try {
+                if (mode === 'json2xml') {
+                    const jsonObj = JSON.parse(input);
+                    let xmlStr = x2js.json2xml_str(jsonObj);
+                    if (!xmlStr) throw new Error("Could not convert JSON to XML.");
+                    
+                    let finalXml = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n' + xmlStr + '\n</root>';
+                    
+                    // Format Output as XML
+                    outputEditor.setValue(formatXml(finalXml));
+                    
+                } else {
+                    const jsonObj = x2js.xml_str2json(input);
+                    if (!jsonObj) throw new Error("Invalid XML structure.");
+                    
+                    // Format Output as JSON
+                    outputEditor.setValue(JSON.stringify(jsonObj, null, 4));
+                }
+            } catch (error) {
+                alert("Error parsing input: " + error.message);
+            }
+        }
+
+        function downloadCode() {
+            const output = outputEditor.getValue();
+            if (!output) {
+                alert("Nothing to download. Please convert some code first.");
+                return;
+            }
+
+            const mode = document.getElementById('conversionMode').value;
+            const extension = mode === 'json2xml' ? '.xml' : '.json';
+            const blob = new Blob([output], { type: "text/plain" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'formatshift_output' + extension;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function clearEditors() {
+            inputEditor.setValue("");
+            outputEditor.setValue("");
+        }
+    </script>
+</body>
+</html>

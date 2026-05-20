@@ -466,12 +466,11 @@
             return parsedData;
         }
 
-        // --- DISPATCHTRACK DATA MAPPER WITH GROUPING LOGIC ---
+        // --- DISPATCHTRACK DATA MAPPER ---
         function buildDispatchTrackJSON(parsedCsv) {
             let ordersMap = {};
             
             parsedCsv.forEach((row, i) => {
-                // Highly flexible order number mapping to support columns like 'Order#', 'Order_ID', etc.
                 let orderNum = row.number || row.order_number || row.order || row.client_reference_number || row.order_id || `order_${i}`;
                 
                 if(!ordersMap[orderNum]) {
@@ -613,11 +612,25 @@
 
             try {
                 if (mode === 'json2xml') {
-                    const jsonObj = JSON.parse(input);
+                    let jsonObj = JSON.parse(input);
+                    
+                    // --- SMART DISPATCHTRACK JSON INTERCEPTOR ---
+                    // Automatically wrap naked arrays or flat objects into DispatchTrack standard XML structure
+                    if (Array.isArray(jsonObj)) {
+                        jsonObj = { service_orders: { service_order: jsonObj } };
+                    } else if (!jsonObj.service_orders) {
+                        if (jsonObj.service_order) {
+                            jsonObj = { service_orders: jsonObj };
+                        } else {
+                            jsonObj = { service_orders: { service_order: [jsonObj] } };
+                        }
+                    }
+
                     let xmlStr = x2js.json2xml_str(jsonObj);
                     if (!xmlStr) throw new Error("Could not convert JSON to XML.");
                     
-                    let finalXml = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n' + xmlStr + '\n</root>';
+                    // Removed the hardcoded <root> tag!
+                    let finalXml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlStr;
                     outputEditor.setValue(formatXml(finalXml));
                     
                 } else if (mode === 'xml2json') {

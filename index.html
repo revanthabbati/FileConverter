@@ -471,13 +471,15 @@
             return parsedData;
         }
 
-        // --- DISPATCHTRACK DATA MAPPER ---
+        // --- DISPATCHTRACK DATA MAPPER WITH GROUPING LOGIC ---
         function buildDispatchTrackJSON(parsedCsv) {
             let ordersMap = {};
+            
             parsedCsv.forEach((row, i) => {
-                // Group items by order number using common headers
+                // Determine order identifier. This ensures rows with the same number map to the same object.
                 let orderNum = row.number || row.order_number || row.client_reference_number || `order_${i}`;
                 
+                // If this order number hasn't been seen yet, create the base order structure
                 if(!ordersMap[orderNum]) {
                     ordersMap[orderNum] = {
                         number: orderNum,
@@ -495,7 +497,7 @@
                             zip: row.customer_zip || row.zip || '',
                             phone1: row.customer_phone1 || row.phone1 || ''
                         },
-                        items: { item: [] },
+                        items: { item: [] }, // Array initialized to hold multiple items
                         extra: {
                             custom_field_2: row.custom_field_2 || ''
                         },
@@ -512,7 +514,8 @@
                     };
                 }
                 
-                // Nest item-level fields securely inside the items object
+                // For EVERY row (whether it's the first time seeing this order or the 5th),
+                // we push the item data into the items array of that order.
                 ordersMap[orderNum].items.item.push({
                     weight: row.item_weight || row.weight || '0',
                     quantity: row.item_quantity || row.quantity || '1',
@@ -523,6 +526,7 @@
                 });
             });
             
+            // X2JS automatically converts Javascript arrays (like items.item) into multiple repeating XML tags
             return { service_orders: { service_order: Object.values(ordersMap) } };
         }
 
@@ -556,7 +560,7 @@
             } else if (mode === 'csv2xml') {
                 document.getElementById('inputBadge').innerText = 'CSV';
                 document.getElementById('outputBadge').innerText = 'XML';
-                inputEditor.setOption("mode", "text/plain"); // Standard text for CSV
+                inputEditor.setOption("mode", "text/plain"); 
                 outputEditor.setOption("mode", "xml");
             }
         }
@@ -599,7 +603,7 @@
                 } else if (mode === 'xml2json') {
                     inputEditor.setValue(formatXml(input));
                 } else if (mode === 'csv2xml') {
-                    inputEditor.setValue(input.trim()); // Just clean edge whitespace for CSV
+                    inputEditor.setValue(input.trim()); 
                 }
             } catch (error) {
                 alert("Error formatting input: Check for syntax errors. " + error.message);

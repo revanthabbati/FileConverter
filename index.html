@@ -466,7 +466,7 @@
             return parsedData;
         }
 
-        // --- DISPATCHTRACK DATA MAPPER ---
+        // --- DISPATCHTRACK DATA MAPPER WITH GROUPING LOGIC ---
         function buildDispatchTrackJSON(parsedCsv) {
             let ordersMap = {};
             
@@ -518,6 +518,23 @@
             });
             
             return { service_orders: { service_order: Object.values(ordersMap) } };
+        }
+
+        // --- SMART JSON PARSER ---
+        // Handles malformed JSON like multiple un-bracketed objects: {}, {}
+        function parseFlexibleJSON(input) {
+            try {
+                return JSON.parse(input);
+            } catch (err) {
+                // If it fails, try wrapping it in array brackets to fix common copy-paste mistakes
+                try {
+                    let cleaned = input.trim();
+                    if (cleaned.endsWith(',')) cleaned = cleaned.slice(0, -1);
+                    return JSON.parse('[' + cleaned + ']');
+                } catch (err2) {
+                    throw err; // Throw original error if fix fails
+                }
+            }
         }
 
         // Theme Toggling Logic
@@ -588,7 +605,7 @@
 
             try {
                 if (mode === 'json2xml') {
-                    const parsed = JSON.parse(input);
+                    const parsed = parseFlexibleJSON(input);
                     inputEditor.setValue(JSON.stringify(parsed, null, 4));
                 } else if (mode === 'xml2json') {
                     inputEditor.setValue(formatXml(input));
@@ -612,10 +629,10 @@
 
             try {
                 if (mode === 'json2xml') {
-                    let jsonObj = JSON.parse(input);
+                    // Use the robust parsing engine
+                    let jsonObj = parseFlexibleJSON(input);
                     
                     // --- SMART DISPATCHTRACK JSON INTERCEPTOR ---
-                    // Automatically wrap naked arrays or flat objects into DispatchTrack standard XML structure
                     if (Array.isArray(jsonObj)) {
                         jsonObj = { service_orders: { service_order: jsonObj } };
                     } else if (!jsonObj.service_orders) {
@@ -629,7 +646,6 @@
                     let xmlStr = x2js.json2xml_str(jsonObj);
                     if (!xmlStr) throw new Error("Could not convert JSON to XML.");
                     
-                    // Removed the hardcoded <root> tag!
                     let finalXml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlStr;
                     outputEditor.setValue(formatXml(finalXml));
                     

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced JSON/XML Converter</title>
+    <title>Advanced JSON/XML/CSV Converter</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
@@ -327,12 +327,13 @@
         <select id="conversionMode" onchange="updatePanelHeaders()">
             <option value="json2xml">JSON to XML</option>
             <option value="xml2json">XML to JSON</option>
+            <option value="csv2xml">CSV to XML</option>
         </select>
 
         <label class="file-upload-label">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
             Upload File
-            <input type="file" id="fileInput" accept=".json,.xml" onchange="handleFileUpload(event)">
+            <input type="file" id="fileInput" accept=".json,.xml,.csv" onchange="handleFileUpload(event)">
         </label>
 
         <button onclick="formatCode()">
@@ -412,27 +413,117 @@
         function formatXml(xml) {
             let formatted = '';
             let pad = 0;
-            // First, remove existing whitespace between tags so we start clean
+            // Remove existing whitespace between tags to start clean
             xml = xml.replace(/>\s+</g, '><');
-            // Then, insert line breaks between adjacent tags
+            // Insert line breaks between adjacent tags
             xml = xml.replace(/(>)(<)(\/*)/g, '$1\n$2$3');
             
             xml.split('\n').forEach(function(node) {
                 let indent = 0;
                 if (node.match( /.+<\/\w[^>]*>$/ )) {
-                    indent = 0; // Node containing text
+                    indent = 0; 
                 } else if (node.match( /^<\/\w/ )) {
-                    if (pad !== 0) pad -= 1; // Closing tag, decrease indent
+                    if (pad !== 0) pad -= 1; 
                 } else if (node.match( /^<\w[^>]*[^\/]>.*$/ )) {
-                    indent = 1; // Opening tag, increase indent for next line
+                    indent = 1; 
                 } else {
-                    indent = 0; // Self closing tag or other
+                    indent = 0; 
                 }
                 
                 formatted += '    '.repeat(Math.max(0, pad)) + node + '\n';
                 pad += indent;
             });
             return formatted.trim();
+        }
+
+        // --- CSV PARSER ENGINE ---
+        function parseCSV(csv) {
+            const lines = csv.split(/\r?\n/).filter(l => l.trim() !== '');
+            if(lines.length < 2) throw new Error("CSV must have headers and at least one row of data.");
+            
+            function splitRow(row) {
+                let result = [];
+                let inQuotes = false;
+                let val = '';
+                for(let i=0; i<row.length; i++) {
+                    let c = row[i];
+                    if(c === '"' && row[i+1] === '"') { val += '"'; i++; }
+                    else if(c === '"') { inQuotes = !inQuotes; }
+                    else if(c === ',' && !inQuotes) { result.push(val.trim()); val = ''; }
+                    else { val += c; }
+                }
+                result.push(val.trim());
+                return result;
+            }
+
+            // Normalize headers into snake_case
+            const headers = splitRow(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, ''));
+            
+            let parsedData = [];
+            for(let i=1; i<lines.length; i++) {
+                let cols = splitRow(lines[i]);
+                let obj = {};
+                headers.forEach((h, idx) => {
+                    obj[h] = cols[idx] || '';
+                });
+                parsedData.push(obj);
+            }
+            return parsedData;
+        }
+
+        // --- DISPATCHTRACK DATA MAPPER ---
+        function buildDispatchTrackJSON(parsedCsv) {
+            let ordersMap = {};
+            parsedCsv.forEach((row, i) => {
+                // Group items by order number using common headers
+                let orderNum = row.number || row.order_number || row.client_reference_number || `order_${i}`;
+                
+                if(!ordersMap[orderNum]) {
+                    ordersMap[orderNum] = {
+                        number: orderNum,
+                        account: row.account || '',
+                        client_code: row.client_code || '',
+                        client_reference_number: row.client_reference_number || orderNum,
+                        service_type: row.service_type || 'Threshold',
+                        description: row.description || row.order_description || '',
+                        customer: {
+                            first_name: row.customer_first_name || row.first_name || '',
+                            address1: row.customer_address1 || row.address1 || '',
+                            address2: row.customer_address2 || row.address2 || '',
+                            city: row.customer_city || row.city || '',
+                            state: row.customer_state || row.state || '',
+                            zip: row.customer_zip || row.zip || '',
+                            phone1: row.customer_phone1 || row.phone1 || ''
+                        },
+                        items: { item: [] },
+                        extra: {
+                            custom_field_2: row.custom_field_2 || ''
+                        },
+                        amount: row.amount || '0',
+                        cod_amount: row.cod_amount || '0',
+                        stop_number: row.stop_number || '0',
+                        delivery_charge: row.delivery_charge || '0',
+                        taxes: row.taxes || '0',
+                        status: row.status || '',
+                        additional_fields: {
+                            bill_to_id: row.bill_to_id || ''
+                        },
+                        shipment_id: row.shipment_id || orderNum
+                    };
+                }
+                
+                // Nest item-level fields securely inside the items object
+                ordersMap[orderNum].items.item.push({
+                    weight: row.item_weight || row.weight || '0',
+                    quantity: row.item_quantity || row.quantity || '1',
+                    cube: row.item_cube || row.cube || '0',
+                    number: row.item_number || row.item_id || '',
+                    item_id: row.item_id || row.item_number || '',
+                    description: row.item_description || row.description || '' 
+                });
+            });
+            
+            return { service_orders: { service_order: Object.values(ordersMap) } };
         }
 
         // Theme Toggling Logic
@@ -457,11 +548,16 @@
                 document.getElementById('outputBadge').innerText = 'XML';
                 inputEditor.setOption("mode", "application/json");
                 outputEditor.setOption("mode", "xml");
-            } else {
+            } else if (mode === 'xml2json') {
                 document.getElementById('inputBadge').innerText = 'XML';
                 document.getElementById('outputBadge').innerText = 'JSON';
                 inputEditor.setOption("mode", "xml");
                 outputEditor.setOption("mode", "application/json");
+            } else if (mode === 'csv2xml') {
+                document.getElementById('inputBadge').innerText = 'CSV';
+                document.getElementById('outputBadge').innerText = 'XML';
+                inputEditor.setOption("mode", "text/plain"); // Standard text for CSV
+                outputEditor.setOption("mode", "xml");
             }
         }
 
@@ -477,6 +573,8 @@
                     document.getElementById('conversionMode').value = 'xml2json';
                 } else if (file.name.endsWith('.json')) {
                     document.getElementById('conversionMode').value = 'json2xml';
+                } else if (file.name.endsWith('.csv')) {
+                    document.getElementById('conversionMode').value = 'csv2xml';
                 }
                 updatePanelHeaders();
             };
@@ -484,7 +582,7 @@
             event.target.value = ''; 
         }
 
-        // --- NEW FORMAT LOGIC ---
+        // Format Logic
         function formatCode() {
             const input = inputEditor.getValue().trim();
             const mode = document.getElementById('conversionMode').value;
@@ -496,19 +594,19 @@
 
             try {
                 if (mode === 'json2xml') {
-                    // Format Input as JSON
                     const parsed = JSON.parse(input);
                     inputEditor.setValue(JSON.stringify(parsed, null, 4));
-                } else {
-                    // Format Input as XML
+                } else if (mode === 'xml2json') {
                     inputEditor.setValue(formatXml(input));
+                } else if (mode === 'csv2xml') {
+                    inputEditor.setValue(input.trim()); // Just clean edge whitespace for CSV
                 }
             } catch (error) {
                 alert("Error formatting input: Check for syntax errors. " + error.message);
             }
         }
 
-        // --- CONVERSION LOGIC ---
+        // Conversion Logic
         function convertCode() {
             const input = inputEditor.getValue().trim();
             const mode = document.getElementById('conversionMode').value;
@@ -525,16 +623,23 @@
                     if (!xmlStr) throw new Error("Could not convert JSON to XML.");
                     
                     let finalXml = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n' + xmlStr + '\n</root>';
-                    
-                    // Format Output as XML
                     outputEditor.setValue(formatXml(finalXml));
                     
-                } else {
+                } else if (mode === 'xml2json') {
                     const jsonObj = x2js.xml_str2json(input);
                     if (!jsonObj) throw new Error("Invalid XML structure.");
-                    
-                    // Format Output as JSON
                     outputEditor.setValue(JSON.stringify(jsonObj, null, 4));
+                    
+                } else if (mode === 'csv2xml') {
+                    // Execute CSV parsing mapped to DispatchTrack payload
+                    const parsedCsv = parseCSV(input);
+                    const dtJson = buildDispatchTrackJSON(parsedCsv);
+                    
+                    let xmlStr = x2js.json2xml_str(dtJson);
+                    if (!xmlStr) throw new Error("Could not construct XML from CSV.");
+                    
+                    let finalXml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlStr;
+                    outputEditor.setValue(formatXml(finalXml));
                 }
             } catch (error) {
                 alert("Error parsing input: " + error.message);
@@ -549,7 +654,7 @@
             }
 
             const mode = document.getElementById('conversionMode').value;
-            const extension = mode === 'json2xml' ? '.xml' : '.json';
+            const extension = mode === 'xml2json' ? '.json' : '.xml';
             const blob = new Blob([output], { type: "text/plain" });
             const url = URL.createObjectURL(blob);
             

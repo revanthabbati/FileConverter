@@ -7,7 +7,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 
     <style>
@@ -23,6 +23,9 @@
             --btn-text: #ffffff;
             --header-bg: rgba(255, 255, 255, 0.85);
             --cm-bg: #f8fafc;
+            --success-color: #16a34a;
+            --error-color: #dc2626;
+            --info-color: #4f46e5;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
@@ -40,6 +43,9 @@
             --btn-text: #ffffff;
             --header-bg: rgba(30, 41, 59, 0.85);
             --cm-bg: #0f172a;
+            --success-color: #22c55e;
+            --error-color: #f87171;
+            --info-color: #818cf8;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
             --shadow-lg: 0 25px 30px -5px rgb(0 0 0 / 0.6);
@@ -61,7 +67,7 @@
             display: flex;
             flex-direction: column;
             transition: background 0.4s ease, color 0.4s ease;
-            overflow: hidden; 
+            overflow: hidden;
         }
 
         @keyframes fadeSlideUp {
@@ -144,7 +150,7 @@
             box-shadow: var(--shadow-sm);
             transition: all 0.2s ease;
         }
-        
+
         select:hover {
             border-color: var(--primary-color);
         }
@@ -187,6 +193,15 @@
             transform: translateY(0);
         }
 
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: var(--shadow-sm) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-muted) !important;
+        }
+
         .btn-primary {
             background-color: var(--primary-color);
             color: var(--btn-text);
@@ -201,15 +216,21 @@
             box-shadow: var(--shadow-md), var(--glow);
         }
 
+        .btn-success-flash {
+            background-color: var(--success-color) !important;
+            border-color: var(--success-color) !important;
+            color: #ffffff !important;
+        }
+
         /* --- Workspace & Editors --- */
         .workspace-wrapper {
             flex-grow: 1;
             padding: 1.5rem 2.5rem;
             display: flex;
             flex-direction: column;
-            min-height: 0; 
+            min-height: 0;
             animation: fadeSlideUp 0.6s ease forwards;
-            opacity: 0; 
+            opacity: 0;
         }
 
         .workspace {
@@ -217,7 +238,7 @@
             grid-template-columns: 1fr 1fr;
             flex-grow: 1;
             gap: 1.5rem;
-            min-height: 0; 
+            min-height: 0;
         }
 
         .panel {
@@ -228,10 +249,11 @@
             box-shadow: var(--shadow-lg);
             border: 1px solid var(--border-color);
             transition: all 0.4s ease;
-            min-height: 0; 
+            min-height: 0;
         }
 
         .panel-header {
+            position: relative;
             padding: 1rem 1.5rem;
             font-size: 0.8rem;
             font-weight: 700;
@@ -246,6 +268,52 @@
             flex-shrink: 0;
             border-top-left-radius: 12px;
             border-top-right-radius: 12px;
+            gap: 0.75rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .char-count {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: none;
+            letter-spacing: normal;
+            white-space: nowrap;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: none;
+            flex-shrink: 0;
+        }
+
+        .icon-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .icon-btn.active {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: var(--bg-gradient);
         }
 
         .panel-badge {
@@ -256,6 +324,73 @@
             border: 1px solid var(--border-color);
             font-weight: 700;
             font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        /* --- Search Box --- */
+        .search-box {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 1rem;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            padding: 0.5rem;
+            align-items: center;
+            gap: 0.35rem;
+            z-index: 30;
+        }
+
+        .search-box.search-box-open {
+            display: flex;
+        }
+
+        .search-box input {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background-color: var(--cm-bg);
+            color: var(--text-color);
+            width: 170px;
+            outline: none;
+            text-transform: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .search-count {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            min-width: 58px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .search-nav-btn {
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            line-height: 1;
+        }
+
+        .cm-searchmatch {
+            background: rgba(250, 204, 21, 0.55);
+            border-radius: 2px;
+        }
+
+        [data-theme="dark"] .cm-searchmatch {
+            background: rgba(250, 204, 21, 0.35);
         }
 
         .editor-container {
@@ -265,6 +400,12 @@
             overflow: hidden;
             border-bottom-left-radius: 12px;
             border-bottom-right-radius: 12px;
+            transition: outline 0.15s ease;
+        }
+
+        .editor-container.drag-over {
+            outline: 2px dashed var(--primary-color);
+            outline-offset: -2px;
         }
 
         .CodeMirror {
@@ -304,6 +445,129 @@
             color: var(--primary-color);
             font-weight: 700;
         }
+
+        /* --- Toasts --- */
+        .toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            z-index: 1000;
+            max-width: min(360px, calc(100vw - 2rem));
+        }
+
+        .toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--info-color);
+            border-radius: 8px;
+            padding: 0.75rem 0.9rem;
+            box-shadow: var(--shadow-lg);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-color);
+            animation: toastIn 0.25s ease forwards;
+        }
+
+        .toast-success { border-left-color: var(--success-color); }
+        .toast-error { border-left-color: var(--error-color); }
+
+        .toast.toast-hide {
+            animation: toastOut 0.2s ease forwards;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes toastOut {
+            from { opacity: 1; }
+            to { opacity: 0; transform: translateX(20px); }
+        }
+
+        .toast-icon {
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+
+        .toast-success .toast-icon { color: var(--success-color); }
+        .toast-error .toast-icon { color: var(--error-color); }
+        .toast-info .toast-icon { color: var(--info-color); }
+
+        .toast-msg {
+            flex-grow: 1;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            width: 18px;
+            height: 18px;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .toast-close:hover {
+            color: var(--text-color);
+            transform: none;
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 880px) {
+            body {
+                overflow-y: auto;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .workspace-wrapper {
+                overflow: visible;
+            }
+
+            .workspace {
+                grid-template-columns: 1fr;
+                grid-auto-rows: minmax(320px, 1fr);
+            }
+
+            header {
+                padding: 1rem 1.25rem;
+            }
+
+            .toolbar {
+                padding: 1rem 1.25rem 0.5rem;
+            }
+
+            .toolbar select,
+            .toolbar button,
+            .toolbar .file-upload-label {
+                flex: 1 1 auto;
+                justify-content: center;
+            }
+
+            #clearBtn {
+                margin-left: 0 !important;
+            }
+
+            .workspace-wrapper {
+                padding: 1rem 1.25rem;
+            }
+
+            .search-box input {
+                width: 120px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -317,7 +581,7 @@
             </svg>
             FormatShift
         </div>
-        
+
         <button class="theme-switch" onclick="toggleTheme()" aria-label="Toggle Theme" title="Toggle Dark/Light Mode">
             <span id="theme-icon" style="font-size: 1.2rem; line-height: 1;">🌙</span>
         </button>
@@ -341,17 +605,22 @@
             Format
         </button>
 
-        <button class="btn-primary" onclick="convertCode()">
+        <button id="swapBtn" onclick="swapPanels()" title="Swap input and output (JSON &#8646; XML only)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+            Swap
+        </button>
+
+        <button class="btn-primary" id="convertBtn" onclick="convertCode()" title="Convert (Ctrl/Cmd + Enter)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
             Convert
         </button>
-        
+
         <button onclick="downloadCode()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             Download
         </button>
-        
-        <button onclick="clearEditors()" style="margin-left: auto; color: #ef4444; border-color: #fca5a5;">
+
+        <button id="clearBtn" onclick="clearEditors()" style="margin-left: auto; color: #ef4444; border-color: #fca5a5;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             Clear
         </button>
@@ -362,18 +631,47 @@
             <div class="panel">
                 <div class="panel-header">
                     <span id="inputHeader">Editor</span>
-                    <span class="panel-badge" id="inputBadge">JSON</span>
+                    <div class="header-actions">
+                        <span class="char-count" id="inputStats"></span>
+                        <div class="search-box" id="inputSearchBox">
+                            <input type="text" id="inputSearchField" placeholder="Search...">
+                            <span class="search-count" id="inputSearchCount"></span>
+                            <button class="search-nav-btn" id="inputSearchPrev" title="Previous match (Shift+Enter)">&#8249;</button>
+                            <button class="search-nav-btn" id="inputSearchNext" title="Next match (Enter)">&#8250;</button>
+                            <button class="search-nav-btn" id="inputSearchClose" title="Close">&times;</button>
+                        </div>
+                        <button class="icon-btn" id="inputSearchToggle" title="Search payload" aria-label="Search input payload">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </button>
+                        <span class="panel-badge" id="inputBadge">JSON</span>
+                    </div>
                 </div>
-                <div class="editor-container">
+                <div class="editor-container" id="inputEditorContainer">
                     <textarea id="inputArea"></textarea>
                 </div>
             </div>
             <div class="panel">
                 <div class="panel-header">
                     <span id="outputHeader">Preview</span>
-                    <span class="panel-badge" id="outputBadge">XML</span>
+                    <div class="header-actions">
+                        <span class="char-count" id="outputStats"></span>
+                        <div class="search-box" id="outputSearchBox">
+                            <input type="text" id="outputSearchField" placeholder="Search...">
+                            <span class="search-count" id="outputSearchCount"></span>
+                            <button class="search-nav-btn" id="outputSearchPrev" title="Previous match (Shift+Enter)">&#8249;</button>
+                            <button class="search-nav-btn" id="outputSearchNext" title="Next match (Enter)">&#8250;</button>
+                            <button class="search-nav-btn" id="outputSearchClose" title="Close">&times;</button>
+                        </div>
+                        <button class="icon-btn" id="outputSearchToggle" title="Search payload" aria-label="Search output payload">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </button>
+                        <button class="icon-btn" id="outputCopyBtn" title="Copy output" aria-label="Copy output payload">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                        <span class="panel-badge" id="outputBadge">XML</span>
+                    </div>
                 </div>
-                <div class="editor-container">
+                <div class="editor-container" id="outputEditorContainer">
                     <textarea id="outputArea"></textarea>
                 </div>
             </div>
@@ -384,13 +682,22 @@
         Designed by <strong>Revanth Reddy Abbati</strong>
     </footer>
 
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/x2js/1.2.0/xml2json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
 
     <script>
+        // --- THEME PERSISTENCE (must run before CodeMirror reads data-theme) ---
+        (function restoreTheme() {
+            const saved = localStorage.getItem('formatshift-theme');
+            if (saved === 'dark' || saved === 'light') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        })();
+
         const initialTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'material-darker' : 'default';
 
         let inputEditor = CodeMirror.fromTextArea(document.getElementById("inputArea"), {
@@ -405,75 +712,349 @@
             theme: initialTheme
         });
 
-        const x2js = new X2JS();
+        const modeSelect = document.getElementById('conversionMode');
+        const convertBtn = document.getElementById('convertBtn');
+        const swapBtn = document.getElementById('swapBtn');
 
-        // --- NATIVE XML FORMATTER ---
-        function formatXml(xml) {
-            let formatted = '';
-            let pad = 0;
-            xml = xml.replace(/>\s+</g, '><');
-            xml = xml.replace(/(>)(<)(\/*)/g, '$1\n$2$3');
-            
-            xml.split('\n').forEach(function(node) {
-                let indent = 0;
-                if (node.match( /.+<\/\w[^>]*>$/ )) {
-                    indent = 0; 
-                } else if (node.match( /^<\/\w/ )) {
-                    if (pad !== 0) pad -= 1; 
-                } else if (node.match( /^<\w[^>]*[^\/]>.*$/ )) {
-                    indent = 1; 
-                } else {
-                    indent = 0; 
+        document.getElementById('theme-icon').innerText =
+            document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+
+        // ============================================================
+        // TOAST NOTIFICATIONS
+        // ============================================================
+        const toast = {
+            show(message, type) {
+                const container = document.getElementById('toastContainer');
+                const el = document.createElement('div');
+                el.className = 'toast toast-' + type;
+
+                const icon = document.createElement('span');
+                icon.className = 'toast-icon';
+                icon.textContent = type === 'success' ? '✓' : type === 'error' ? '⚠' : 'ℹ';
+
+                const msg = document.createElement('span');
+                msg.className = 'toast-msg';
+                msg.textContent = message;
+
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'toast-close';
+                closeBtn.setAttribute('aria-label', 'Dismiss');
+                closeBtn.textContent = '×';
+
+                el.appendChild(icon);
+                el.appendChild(msg);
+                el.appendChild(closeBtn);
+                container.appendChild(el);
+
+                const timer = setTimeout(dismiss, 4500);
+                closeBtn.addEventListener('click', dismiss);
+
+                function dismiss() {
+                    clearTimeout(timer);
+                    el.classList.add('toast-hide');
+                    setTimeout(() => el.remove(), 200);
                 }
-                
-                formatted += '    '.repeat(Math.max(0, pad)) + node + '\n';
-                pad += indent;
-            });
-            return formatted.trim();
+            },
+            success(m) { this.show(m, 'success'); },
+            error(m) { this.show(m, 'error'); },
+            info(m) { this.show(m, 'info'); }
+        };
+
+        function flashButtonSuccess(btn) {
+            btn.classList.add('btn-success-flash');
+            setTimeout(() => btn.classList.remove('btn-success-flash'), 900);
         }
 
-        // --- CSV PARSER ENGINE ---
-        function parseCSV(csv) {
-            const lines = csv.split(/\r?\n/).filter(l => l.trim() !== '');
-            if(lines.length < 2) throw new Error("CSV must have headers and at least one row of data.");
-            
-            function splitRow(row) {
-                let result = [];
-                let inQuotes = false;
-                let val = '';
-                for(let i=0; i<row.length; i++) {
-                    let c = row[i];
-                    if(c === '"' && row[i+1] === '"') { val += '"'; i++; }
-                    else if(c === '"') { inQuotes = !inQuotes; }
-                    else if(c === ',' && !inQuotes) { result.push(val.trim()); val = ''; }
-                    else { val += c; }
+        // ============================================================
+        // XML SERIALIZATION HELPERS (no external XML library required)
+        // ============================================================
+        function escapeXmlText(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function escapeXmlAttr(value) {
+            return escapeXmlText(value).replace(/"/g, '&quot;');
+        }
+
+        function sanitizeXmlTagName(name) {
+            let n = String(name).trim();
+            if (!n) return '_';
+            n = n.replace(/[^A-Za-z0-9_.-]/g, '_');
+            if (/^[0-9.-]/.test(n)) n = '_' + n;
+            if (/^xml/i.test(n)) n = '_' + n;
+            return n;
+        }
+
+        // Serializes a single JS value under `tag` into indented XML.
+        // Objects may use "@attrName" keys for attributes and "#text" for
+        // mixed text content, mirroring common JSON<->XML conventions.
+        function serializeXmlElement(tag, value, indent) {
+            const pad = '    '.repeat(indent);
+            const safeTag = sanitizeXmlTagName(tag);
+
+            if (value === null || value === undefined) {
+                return pad + '<' + safeTag + '/>\n';
+            }
+
+            if (Array.isArray(value)) {
+                if (value.length === 0) return pad + '<' + safeTag + '/>\n';
+                return value.map(v => serializeXmlElement(tag, v, indent)).join('');
+            }
+
+            if (typeof value === 'object') {
+                let attrs = '';
+                let text = null;
+                const childKeys = [];
+
+                Object.keys(value).forEach(k => {
+                    if (k === '#text') {
+                        text = value[k];
+                    } else if (k.startsWith('@')) {
+                        attrs += ' ' + sanitizeXmlTagName(k.slice(1)) + '="' + escapeXmlAttr(value[k]) + '"';
+                    } else {
+                        childKeys.push(k);
+                    }
+                });
+
+                if (childKeys.length === 0) {
+                    if (text !== null && text !== undefined && String(text) !== '') {
+                        return pad + '<' + safeTag + attrs + '>' + escapeXmlText(text) + '</' + safeTag + '>\n';
+                    }
+                    return pad + '<' + safeTag + attrs + '/>\n';
                 }
-                result.push(val.trim());
+
+                let inner = '';
+                if (text !== null && text !== undefined && String(text) !== '') {
+                    inner += '    '.repeat(indent + 1) + escapeXmlText(text) + '\n';
+                }
+                childKeys.forEach(k => { inner += serializeXmlElement(k, value[k], indent + 1); });
+                return pad + '<' + safeTag + attrs + '>\n' + inner + pad + '</' + safeTag + '>\n';
+            }
+
+            const strVal = String(value);
+            if (strVal === '') return pad + '<' + safeTag + '/>\n';
+            return pad + '<' + safeTag + '>' + escapeXmlText(strVal) + '</' + safeTag + '>\n';
+        }
+
+        function buildXmlDocument(rootObj) {
+            const rootKey = Object.keys(rootObj)[0];
+            const body = serializeXmlElement(rootKey, rootObj[rootKey], 0);
+            return '<?xml version="1.0" encoding="UTF-8"?>\n' + body.trimEnd() + '\n';
+        }
+
+        // Wraps arbitrary JSON so it has exactly one XML root element.
+        function normalizeJsonForXmlRoot(data) {
+            if (Array.isArray(data)) {
+                return { root: { item: data } };
+            }
+            if (data === null || typeof data !== 'object') {
+                return { root: data };
+            }
+            const keys = Object.keys(data);
+            if (keys.length === 1) return data;
+            return { root: data };
+        }
+
+        // ============================================================
+        // XML -> JS OBJECT (via native DOMParser, replaces old x2js dep)
+        // ============================================================
+        function xmlNodeToJs(node) {
+            const result = {};
+            if (node.attributes) {
+                for (const attr of node.attributes) {
+                    result['@' + attr.name] = attr.value;
+                }
+            }
+
+            let textContent = '';
+            let hasElementChild = false;
+
+            for (const child of node.childNodes) {
+                if (child.nodeType === 1) {
+                    hasElementChild = true;
+                    const childVal = xmlNodeToJs(child);
+                    const tag = child.nodeName;
+                    if (result[tag] === undefined) {
+                        result[tag] = childVal;
+                    } else if (Array.isArray(result[tag])) {
+                        result[tag].push(childVal);
+                    } else {
+                        result[tag] = [result[tag], childVal];
+                    }
+                } else if (child.nodeType === 3 || child.nodeType === 4) {
+                    textContent += child.nodeValue;
+                }
+            }
+
+            textContent = textContent.trim();
+            const hasAttrs = Object.keys(result).length > 0;
+
+            if (!hasElementChild) {
+                if (!hasAttrs) return textContent;
+                if (textContent) result['#text'] = textContent;
                 return result;
             }
 
-            const headers = splitRow(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, ''));
-            
-            let parsedData = [];
-            for(let i=1; i<lines.length; i++) {
-                let cols = splitRow(lines[i]);
-                let obj = {};
+            if (textContent) result['#text'] = textContent;
+            return result;
+        }
+
+        function xmlStringToJsonObject(xmlString) {
+            if (!xmlString || !xmlString.trim()) {
+                throw new Error('XML input is empty.');
+            }
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xmlString, 'application/xml');
+            const errorNode = doc.getElementsByTagName('parsererror')[0];
+            if (errorNode) {
+                throw new Error('Invalid XML: ' + errorNode.textContent.trim().split('\n')[0]);
+            }
+            const root = doc.documentElement;
+            if (!root) throw new Error('No root element found in XML.');
+            return { [root.nodeName]: xmlNodeToJs(root) };
+        }
+
+        // ============================================================
+        // XML PRETTY PRINTER (via native DOMParser, replaces regex formatter)
+        // ============================================================
+        function serializeNodeForPrint(node, indent) {
+            const pad = '    '.repeat(indent);
+            switch (node.nodeType) {
+                case 1: { // ELEMENT_NODE
+                    const tag = node.nodeName;
+                    let attrs = '';
+                    for (const attr of node.attributes) {
+                        attrs += ' ' + attr.name + '="' + escapeXmlAttr(attr.value) + '"';
+                    }
+                    const children = Array.from(node.childNodes).filter(n => !(n.nodeType === 3 && !n.nodeValue.trim()));
+                    if (children.length === 0) {
+                        return pad + '<' + tag + attrs + '/>\n';
+                    }
+                    if (children.length === 1 && children[0].nodeType === 3) {
+                        return pad + '<' + tag + attrs + '>' + escapeXmlText(children[0].nodeValue.trim()) + '</' + tag + '>\n';
+                    }
+                    let inner = '';
+                    children.forEach(c => { inner += serializeNodeForPrint(c, indent + 1); });
+                    return pad + '<' + tag + attrs + '>\n' + inner + pad + '</' + tag + '>\n';
+                }
+                case 3: {
+                    const t = node.nodeValue.trim();
+                    return t ? pad + escapeXmlText(t) + '\n' : '';
+                }
+                case 4:
+                    return pad + '<![CDATA[' + node.nodeValue + ']]>\n';
+                case 8:
+                    return pad + '<!--' + node.nodeValue + '-->\n';
+                case 7:
+                    return pad + '<?' + node.target + ' ' + node.data + '?>\n';
+                default:
+                    return '';
+            }
+        }
+
+        function prettyPrintXml(xmlString) {
+            if (!xmlString || !xmlString.trim()) {
+                throw new Error('XML input is empty.');
+            }
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xmlString, 'application/xml');
+            const errorNode = doc.getElementsByTagName('parsererror')[0];
+            if (errorNode) {
+                throw new Error('Invalid XML: ' + errorNode.textContent.trim().split('\n')[0]);
+            }
+            let out = '';
+            Array.from(doc.childNodes).forEach(n => {
+                if (n.nodeType === 1 || n.nodeType === 8 || n.nodeType === 7) {
+                    out += serializeNodeForPrint(n, 0);
+                }
+            });
+            return '<?xml version="1.0" encoding="UTF-8"?>\n' + out.trimEnd() + '\n';
+        }
+
+        // ============================================================
+        // CSV PARSER (RFC 4180 char-based: quoted commas/newlines, BOM,
+        // delimiter auto-detection, duplicate/ragged column tolerance)
+        // ============================================================
+        function parseCSV(csvText) {
+            let text = csvText.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            if (!text.trim()) throw new Error('CSV is empty.');
+
+            const firstLineEnd = text.indexOf('\n');
+            const firstLine = firstLineEnd === -1 ? text : text.slice(0, firstLineEnd);
+            const candidates = [',', ';', '\t'];
+            let delimiter = ',';
+            let bestCount = -1;
+            candidates.forEach(c => {
+                const count = firstLine.split(c).length - 1;
+                if (count > bestCount) { bestCount = count; delimiter = c; }
+            });
+
+            const rows = [];
+            let row = [];
+            let field = '';
+            let inQuotes = false;
+            let i = 0;
+            const n = text.length;
+
+            while (i < n) {
+                const c = text[i];
+                if (inQuotes) {
+                    if (c === '"') {
+                        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+                        inQuotes = false; i++; continue;
+                    }
+                    field += c; i++; continue;
+                }
+                if (c === '"') { inQuotes = true; i++; continue; }
+                if (c === delimiter) { row.push(field); field = ''; i++; continue; }
+                if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+                field += c; i++;
+            }
+            row.push(field);
+            rows.push(row);
+
+            const nonEmptyRows = rows.filter(r => r.some(v => v.trim() !== ''));
+            if (nonEmptyRows.length < 2) {
+                throw new Error('CSV must have headers and at least one row of data.');
+            }
+
+            const seen = {};
+            const headers = nonEmptyRows[0].map(h => {
+                let clean = h.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'column';
+                if (seen[clean] !== undefined) {
+                    seen[clean] += 1;
+                    clean = clean + '_' + seen[clean];
+                } else {
+                    seen[clean] = 0;
+                }
+                return clean;
+            });
+
+            const parsedData = [];
+            for (let r = 1; r < nonEmptyRows.length; r++) {
+                const cols = nonEmptyRows[r];
+                const obj = {};
                 headers.forEach((h, idx) => {
-                    obj[h] = cols[idx] || '';
+                    obj[h] = (cols[idx] !== undefined ? cols[idx] : '').trim();
                 });
                 parsedData.push(obj);
             }
             return parsedData;
         }
 
-        // --- DISPATCHTRACK DATA MAPPER WITH GROUPING LOGIC ---
+        // --- DISPATCHTRACK CSV -> XML MAPPER (kept as the dedicated
+        // DispatchTrack Order Import shape; matches the field names used
+        // by the DispatchTrack XML bulk-import schema) ---
         function buildDispatchTrackJSON(parsedCsv) {
             let ordersMap = {};
-            
+
             parsedCsv.forEach((row, i) => {
-                let orderNum = row.number || row.order_number || row.order || row.client_reference_number || row.order_id || `order_${i}`;
-                
-                if(!ordersMap[orderNum]) {
+                let orderNum = row.number || row.order_number || row.order || row.client_reference_number || row.order_id || ('order_' + i);
+
+                if (!ordersMap[orderNum]) {
                     ordersMap[orderNum] = {
                         number: orderNum,
                         account: row.account || '',
@@ -481,6 +1062,7 @@
                         client_reference_number: row.client_reference_number || orderNum,
                         service_type: row.service_type || 'Threshold',
                         description: row.description || row.order_description || row.special_instructions || '',
+                        delivery_date: row.delivery_date || row.delivery_dt || row.date || '',
                         customer: {
                             first_name: row.customer_first_name || row.first_name || row.location_name || row.customer_name || row.name || '',
                             address1: row.customer_address1 || row.address1 || row.address || row.address_1 || '',
@@ -490,7 +1072,7 @@
                             zip: row.customer_zip || row.zip || row.zipcode || row.zip_code || '',
                             phone1: row.customer_phone1 || row.phone1 || row.phone || row.contact_number || ''
                         },
-                        items: { item: [] }, 
+                        items: { item: [] },
                         extra: {
                             custom_field_2: row.custom_field_2 || ''
                         },
@@ -505,36 +1087,153 @@
                         },
                         shipment_id: row.shipment_id || orderNum
                     };
+
+                    const noteBodies = [row.comment_1, row.comment_2].filter(v => v && v.trim());
+                    if (noteBodies.length) {
+                        ordersMap[orderNum].notes = { note: noteBodies.map(b => ({ '#text': b })) };
+                    }
                 }
-                
+
                 ordersMap[orderNum].items.item.push({
                     weight: row.item_weight || row.weight || '0',
                     quantity: row.item_quantity || row.quantity || '1',
                     cube: row.item_cube || row.cube || '0',
                     number: row.item_number || row.item_id || row.sku || '',
                     item_id: row.item_id || row.item_number || row.sku || '',
-                    description: row.item_description || row.description || '' 
+                    description: row.item_description || row.description || ''
                 });
             });
-            
+
             return { service_orders: { service_order: Object.values(ordersMap) } };
         }
 
-        // --- SMART JSON PARSER ---
-        // Handles malformed JSON like multiple un-bracketed objects: {}, {}
+        // ============================================================
+        // SMART JSON PARSER: recovers from common copy/paste mistakes
+        // (trailing commas, multiple bare objects without array brackets)
+        // ============================================================
         function parseFlexibleJSON(input) {
             try {
                 return JSON.parse(input);
             } catch (err) {
-                // If it fails, try wrapping it in array brackets to fix common copy-paste mistakes
                 try {
-                    let cleaned = input.trim();
-                    if (cleaned.endsWith(',')) cleaned = cleaned.slice(0, -1);
-                    return JSON.parse('[' + cleaned + ']');
+                    const cleaned = input.trim().replace(/,(\s*[}\]])/g, '$1');
+                    return JSON.parse(cleaned);
                 } catch (err2) {
-                    throw err; // Throw original error if fix fails
+                    try {
+                        let wrapped = input.trim();
+                        if (wrapped.endsWith(',')) wrapped = wrapped.slice(0, -1);
+                        wrapped = '[' + wrapped + ']';
+                        wrapped = wrapped.replace(/,(\s*[}\]])/g, '$1');
+                        return JSON.parse(wrapped);
+                    } catch (err3) {
+                        throw err;
+                    }
                 }
             }
+        }
+
+        // ============================================================
+        // DISPATCHTRACK JSON (/add-order API) -> XML (bulk-import schema)
+        // Auto-detected: field names differ between DispatchTrack's JSON
+        // REST API (order_number, account_name, sku_number, ...) and its
+        // older XML bulk-import format (number, account, item_id, ...).
+        // Non-DispatchTrack JSON falls back to a generic 1:1 conversion.
+        // ============================================================
+        function extractServiceOrders(data) {
+            let orders = null;
+            if (Array.isArray(data)) {
+                orders = data;
+            } else if (data && typeof data === 'object') {
+                if (Array.isArray(data.service_orders)) {
+                    orders = data.service_orders;
+                } else if (data.service_orders && typeof data.service_orders === 'object') {
+                    const inner = data.service_orders.service_order;
+                    if (Array.isArray(inner)) orders = inner;
+                    else if (inner && typeof inner === 'object') orders = [inner];
+                    else orders = [data.service_orders];
+                } else if (data.order_number || data.number) {
+                    orders = [data];
+                }
+            }
+            if (!orders || !orders.length) return null;
+            const looksLikeOrder = orders.every(o => o && typeof o === 'object' && (o.order_number || o.number));
+            return looksLikeOrder ? orders : null;
+        }
+
+        const CONTACT_METHOD_MAP = { email: 'EMAIL', text: 'TEXT', voice: 'VOICE', all: 'ALL', none: 'NONE' };
+        const CUSTOMER_DIRECT_FIELDS = ['customer_id', 'email', 'phone1', 'phone2', 'phone3', 'address1', 'address2', 'city', 'state', 'zip', 'latitude', 'longitude'];
+        const CUSTOMER_HANDLED_FIELDS = ['first_name', 'last_name', 'name', 'preferred_contact_mode'].concat(CUSTOMER_DIRECT_FIELDS);
+
+        function mapCustomerJsonToXml(customer) {
+            if (!customer || typeof customer !== 'object') return customer;
+            const out = {};
+
+            let firstName = customer.first_name;
+            let lastName = customer.last_name;
+            if (!firstName && !lastName && customer.name) {
+                const parts = String(customer.name).trim().split(/\s+/);
+                firstName = parts.shift() || '';
+                lastName = parts.join(' ');
+            }
+            if (firstName !== undefined) out.first_name = firstName;
+            if (lastName !== undefined) out.last_name = lastName;
+
+            CUSTOMER_DIRECT_FIELDS.forEach(k => {
+                if (customer[k] !== undefined) out[k] = customer[k];
+            });
+
+            if (customer.preferred_contact_mode) {
+                const first = String(customer.preferred_contact_mode).split(',')[0].trim().toLowerCase();
+                out.preferred_contact_method = CONTACT_METHOD_MAP[first] || 'ALL';
+            }
+
+            Object.keys(customer).forEach(k => {
+                if (!CUSTOMER_HANDLED_FIELDS.includes(k) && out[k] === undefined) {
+                    out[k] = customer[k];
+                }
+            });
+
+            return out;
+        }
+
+        const ITEM_RENAME = { sku_number: 'item_id', item_note: 'line_item_notes', location_code: 'location', line_sequence: 'sale_sequence' };
+
+        function mapItemJsonToXml(item) {
+            if (!item || typeof item !== 'object') return item;
+            const out = {};
+            Object.keys(item).forEach(k => {
+                out[ITEM_RENAME[k] || k] = item[k];
+            });
+            return out;
+        }
+
+        const ORDER_RENAME = { order_number: 'number', account_name: 'account' };
+
+        function mapOrderJsonToXml(order) {
+            const out = {};
+            Object.keys(order).forEach(k => {
+                if (k === 'customer') {
+                    out.customer = mapCustomerJsonToXml(order.customer);
+                    return;
+                }
+                if (k === 'items') {
+                    const items = Array.isArray(order.items) ? order.items : [order.items];
+                    out.items = { item: items.map(mapItemJsonToXml) };
+                    return;
+                }
+                if (k === 'notes') {
+                    const notes = Array.isArray(order.notes) ? order.notes : [order.notes];
+                    out.notes = {
+                        note: notes.map(note => {
+                            if (note && typeof note === 'object') return { '#text': note.body || note.text || '' };
+                            return { '#text': note };
+                        })
+                    };
+                    return;
+                }
+                out[ORDER_RENAME[k] || k] = order[k];
+            });
+            return out;
         }
 
         // Theme Toggling Logic
@@ -542,8 +1241,9 @@
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
+
             html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('formatshift-theme', newTheme);
             document.getElementById('theme-icon').innerText = newTheme === 'dark' ? '☀️' : '🌙';
 
             const cmTheme = newTheme === 'dark' ? 'material-darker' : 'default';
@@ -553,7 +1253,7 @@
 
         // Header and syntax logic
         function updatePanelHeaders() {
-            const mode = document.getElementById('conversionMode').value;
+            const mode = modeSelect.value;
             if (mode === 'json2xml') {
                 document.getElementById('inputBadge').innerText = 'JSON';
                 document.getElementById('outputBadge').innerText = 'XML';
@@ -567,39 +1267,46 @@
             } else if (mode === 'csv2xml') {
                 document.getElementById('inputBadge').innerText = 'CSV';
                 document.getElementById('outputBadge').innerText = 'XML';
-                inputEditor.setOption("mode", "text/plain"); 
+                inputEditor.setOption("mode", "text/plain");
                 outputEditor.setOption("mode", "xml");
             }
+            swapBtn.disabled = (mode === 'csv2xml');
         }
 
-        // File Upload Logic
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
+        // Shared file-loading logic (used by both file input and drag & drop)
+        function handleFile(file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 inputEditor.setValue(e.target.result);
                 if (file.name.endsWith('.xml')) {
-                    document.getElementById('conversionMode').value = 'xml2json';
+                    modeSelect.value = 'xml2json';
                 } else if (file.name.endsWith('.json')) {
-                    document.getElementById('conversionMode').value = 'json2xml';
+                    modeSelect.value = 'json2xml';
                 } else if (file.name.endsWith('.csv')) {
-                    document.getElementById('conversionMode').value = 'csv2xml';
+                    modeSelect.value = 'csv2xml';
                 }
                 updatePanelHeaders();
+                toast.success('Loaded ' + file.name);
+            };
+            reader.onerror = function () {
+                toast.error('Could not read that file.');
             };
             reader.readAsText(file);
-            event.target.value = ''; 
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) handleFile(file);
+            event.target.value = '';
         }
 
         // Format Logic
         function formatCode() {
             const input = inputEditor.getValue().trim();
-            const mode = document.getElementById('conversionMode').value;
-            
+            const mode = modeSelect.value;
+
             if (!input) {
-                alert("Please enter or upload code to format.");
+                toast.error('Please enter or upload code to format.');
                 return;
             }
 
@@ -608,79 +1315,85 @@
                     const parsed = parseFlexibleJSON(input);
                     inputEditor.setValue(JSON.stringify(parsed, null, 4));
                 } else if (mode === 'xml2json') {
-                    inputEditor.setValue(formatXml(input));
+                    inputEditor.setValue(prettyPrintXml(input));
                 } else if (mode === 'csv2xml') {
-                    inputEditor.setValue(input.trim()); 
+                    inputEditor.setValue(input.trim());
                 }
+                toast.success('Formatted.');
             } catch (error) {
-                alert("Error formatting input: Check for syntax errors. " + error.message);
+                toast.error('Error formatting input: ' + error.message);
             }
         }
 
         // Conversion Logic
         function convertCode() {
             const input = inputEditor.getValue().trim();
-            const mode = document.getElementById('conversionMode').value;
-            
+            const mode = modeSelect.value;
+
             if (!input) {
-                alert("Please enter or upload code to convert.");
+                toast.error('Please enter or upload code to convert.');
                 return;
             }
 
             try {
                 if (mode === 'json2xml') {
-                    // Use the robust parsing engine
-                    let jsonObj = parseFlexibleJSON(input);
-                    
-                    // --- SMART DISPATCHTRACK JSON INTERCEPTOR ---
-                    if (Array.isArray(jsonObj)) {
-                        jsonObj = { service_orders: { service_order: jsonObj } };
-                    } else if (!jsonObj.service_orders) {
-                        if (jsonObj.service_order) {
-                            jsonObj = { service_orders: jsonObj };
-                        } else {
-                            jsonObj = { service_orders: { service_order: [jsonObj] } };
-                        }
+                    const jsonObj = parseFlexibleJSON(input);
+                    const orders = extractServiceOrders(jsonObj);
+
+                    if (orders) {
+                        const xmlRoot = { service_orders: { service_order: orders.map(mapOrderJsonToXml) } };
+                        outputEditor.setValue(buildXmlDocument(xmlRoot));
+                        toast.success('Converted ' + orders.length + ' DispatchTrack order' + (orders.length > 1 ? 's' : '') + ' to XML.');
+                    } else {
+                        const xmlRoot = normalizeJsonForXmlRoot(jsonObj);
+                        outputEditor.setValue(buildXmlDocument(xmlRoot));
+                        toast.success('Conversion complete.');
                     }
 
-                    let xmlStr = x2js.json2xml_str(jsonObj);
-                    if (!xmlStr) throw new Error("Could not convert JSON to XML.");
-                    
-                    let finalXml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlStr;
-                    outputEditor.setValue(formatXml(finalXml));
-                    
                 } else if (mode === 'xml2json') {
-                    const jsonObj = x2js.xml_str2json(input);
-                    if (!jsonObj) throw new Error("Invalid XML structure.");
+                    const jsonObj = xmlStringToJsonObject(input);
                     outputEditor.setValue(JSON.stringify(jsonObj, null, 4));
-                    
+                    toast.success('Conversion complete.');
+
                 } else if (mode === 'csv2xml') {
                     const parsedCsv = parseCSV(input);
                     const dtJson = buildDispatchTrackJSON(parsedCsv);
-                    
-                    let xmlStr = x2js.json2xml_str(dtJson);
-                    if (!xmlStr) throw new Error("Could not construct XML from CSV.");
-                    
-                    let finalXml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlStr;
-                    outputEditor.setValue(formatXml(finalXml));
+                    outputEditor.setValue(buildXmlDocument(dtJson));
+                    toast.success('Converted ' + parsedCsv.length + ' CSV row' + (parsedCsv.length > 1 ? 's' : '') + ' to XML.');
                 }
+                flashButtonSuccess(convertBtn);
             } catch (error) {
-                alert("Error parsing input: " + error.message);
+                toast.error('Conversion failed: ' + error.message);
             }
+        }
+
+        function swapPanels() {
+            const mode = modeSelect.value;
+            if (mode === 'csv2xml') {
+                toast.info('Swap is available for JSON ⇄ XML modes only.');
+                return;
+            }
+            const inputVal = inputEditor.getValue();
+            const outputVal = outputEditor.getValue();
+            modeSelect.value = mode === 'json2xml' ? 'xml2json' : 'json2xml';
+            updatePanelHeaders();
+            inputEditor.setValue(outputVal);
+            outputEditor.setValue(inputVal);
+            toast.success('Swapped input and output.');
         }
 
         function downloadCode() {
             const output = outputEditor.getValue();
             if (!output) {
-                alert("Nothing to download. Please convert some code first.");
+                toast.error('Nothing to download. Please convert some code first.');
                 return;
             }
 
-            const mode = document.getElementById('conversionMode').value;
+            const mode = modeSelect.value;
             const extension = mode === 'xml2json' ? '.json' : '.xml';
             const blob = new Blob([output], { type: "text/plain" });
             const url = URL.createObjectURL(blob);
-            
+
             const a = document.createElement('a');
             a.href = url;
             a.download = 'formatshift_output' + extension;
@@ -694,6 +1407,170 @@
             inputEditor.setValue("");
             outputEditor.setValue("");
         }
+
+        // ============================================================
+        // LIVE STATS (line count / size) per panel
+        // ============================================================
+        function formatBytes(bytes) {
+            return bytes < 1024 ? bytes + ' B' : (bytes / 1024).toFixed(1) + ' KB';
+        }
+
+        function updateStats(editor, el) {
+            const value = editor.getValue();
+            if (!value) { el.textContent = ''; return; }
+            el.textContent = editor.lineCount() + ' ln · ' + formatBytes(new Blob([value]).size);
+        }
+
+        const inputStatsEl = document.getElementById('inputStats');
+        const outputStatsEl = document.getElementById('outputStats');
+        inputEditor.on('change', () => updateStats(inputEditor, inputStatsEl));
+        outputEditor.on('change', () => updateStats(outputEditor, outputStatsEl));
+
+        // ============================================================
+        // COPY TO CLIPBOARD
+        // ============================================================
+        document.getElementById('outputCopyBtn').addEventListener('click', async () => {
+            const val = outputEditor.getValue();
+            if (!val) { toast.error('Nothing to copy yet.'); return; }
+            try {
+                await navigator.clipboard.writeText(val);
+                toast.success('Copied to clipboard.');
+            } catch (e) {
+                toast.error('Could not copy — clipboard access was denied.');
+            }
+        });
+
+        // ============================================================
+        // DRAG & DROP FILE UPLOAD (onto the input editor)
+        // ============================================================
+        const inputDropZone = document.getElementById('inputEditorContainer');
+        ['dragenter', 'dragover'].forEach(evt => {
+            inputDropZone.addEventListener(evt, e => {
+                e.preventDefault();
+                inputDropZone.classList.add('drag-over');
+            });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+            inputDropZone.addEventListener(evt, e => {
+                e.preventDefault();
+                inputDropZone.classList.remove('drag-over');
+            });
+        });
+        inputDropZone.addEventListener('drop', e => {
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        // ============================================================
+        // SEARCH-IN-PAYLOAD (per panel, via CodeMirror searchcursor addon)
+        // ============================================================
+        function createSearchController(editor, ids) {
+            const input = document.getElementById(ids.input);
+            const countEl = document.getElementById(ids.count);
+            const prevBtn = document.getElementById(ids.prev);
+            const nextBtn = document.getElementById(ids.next);
+            const closeBtn = document.getElementById(ids.close);
+            const box = document.getElementById(ids.box);
+            const toggleBtn = document.getElementById(ids.toggle);
+
+            let markers = [];
+            let matches = [];
+            let currentIndex = -1;
+
+            function clearHighlights() {
+                markers.forEach(m => m.clear());
+                markers = [];
+                matches = [];
+                currentIndex = -1;
+                countEl.textContent = '';
+            }
+
+            function runSearch() {
+                clearHighlights();
+                const query = input.value;
+                if (!query) return;
+                const cursor = editor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+                while (cursor.findNext()) {
+                    matches.push({ from: cursor.from(), to: cursor.to() });
+                    markers.push(editor.markText(cursor.from(), cursor.to(), { className: 'cm-searchmatch' }));
+                }
+                if (matches.length) {
+                    currentIndex = 0;
+                    highlightCurrent();
+                } else {
+                    countEl.textContent = 'No matches';
+                }
+            }
+
+            function highlightCurrent() {
+                if (currentIndex < 0 || !matches.length) return;
+                const m = matches[currentIndex];
+                editor.setSelection(m.from, m.to);
+                editor.scrollIntoView({ from: m.from, to: m.to }, 60);
+                countEl.textContent = (currentIndex + 1) + '/' + matches.length;
+            }
+
+            function goNext() {
+                if (!matches.length) return;
+                currentIndex = (currentIndex + 1) % matches.length;
+                highlightCurrent();
+            }
+
+            function goPrev() {
+                if (!matches.length) return;
+                currentIndex = (currentIndex - 1 + matches.length) % matches.length;
+                highlightCurrent();
+            }
+
+            function openBox() {
+                box.classList.add('search-box-open');
+                toggleBtn.classList.add('active');
+                input.focus();
+                input.select();
+            }
+
+            function closeBox() {
+                clearHighlights();
+                input.value = '';
+                box.classList.remove('search-box-open');
+                toggleBtn.classList.remove('active');
+            }
+
+            input.addEventListener('input', runSearch);
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); e.shiftKey ? goPrev() : goNext(); }
+                else if (e.key === 'Escape') { e.preventDefault(); closeBox(); }
+            });
+            nextBtn.addEventListener('click', goNext);
+            prevBtn.addEventListener('click', goPrev);
+            closeBtn.addEventListener('click', closeBox);
+            toggleBtn.addEventListener('click', () => {
+                box.classList.contains('search-box-open') ? closeBox() : openBox();
+            });
+
+            return { closeBox };
+        }
+
+        const inputSearch = createSearchController(inputEditor, {
+            input: 'inputSearchField', count: 'inputSearchCount', prev: 'inputSearchPrev',
+            next: 'inputSearchNext', close: 'inputSearchClose', box: 'inputSearchBox', toggle: 'inputSearchToggle'
+        });
+        const outputSearch = createSearchController(outputEditor, {
+            input: 'outputSearchField', count: 'outputSearchCount', prev: 'outputSearchPrev',
+            next: 'outputSearchNext', close: 'outputSearchClose', box: 'outputSearchBox', toggle: 'outputSearchToggle'
+        });
+
+        // ============================================================
+        // KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                convertCode();
+            }
+        });
+
+        updatePanelHeaders();
     </script>
 </body>
 </html>
